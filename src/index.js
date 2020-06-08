@@ -84,8 +84,8 @@ function init() {
   //camera.position.set(-9.365242993833716, 5.599999999999999, 0.48)
   //camera.rotation.set(-1, -0.9, -1)
   //camera.lookAt(0, 0, 0)
-  camera.position.set(animationSteps[0].position.x,animationSteps[0].position.y,animationSteps[0].position.z)
-  camera.rotation.set(animationSteps[0].rotation.x,animationSteps[0].rotation.y,animationSteps[0].rotation.z)
+  //camera.position.set(animationSteps[0].position.x,animationSteps[0].position.y,animationSteps[0].position.z)
+  //camera.rotation.set(animationSteps[0].rotation.x,animationSteps[0].rotation.y,animationSteps[0].rotation.z)
 
   scene = new THREE.Scene()
   scene.background = new THREE.Color(0xffffff)
@@ -141,6 +141,9 @@ function init() {
     RIGHT: 39, // right arrow
     BOTTOM: 40 // down arrow
   }
+  camera.position.set(animationSteps[0].position.x,animationSteps[0].position.y,animationSteps[0].position.z)
+  camera.rotation.set(animationSteps[0].rotation.x,animationSteps[0].rotation.y,animationSteps[0].rotation.z)
+
 
   /*
   controls.minDistance = 5
@@ -207,6 +210,8 @@ function init() {
   $(window).scroll(function() {
     scrollPoints()
   })
+
+  animateCam(0)
 }
 
 var posTween, rotTween
