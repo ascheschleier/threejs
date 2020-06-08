@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+          integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+
+    <style>
+        body {
+            margin: 0;
+        }
+
+        canvas {
+            position: fixed;
+            left: 0;
+            right: 0;
+            top: 0;
+            z-index: -1;
+            width: 100%;
+        }
+
+        .smallSpace {
+            margin-top: 10vh;
+        }
+
+        .mediumSpace {
+            margin-top: 30vh;
+        }
+
+        .bigSpace {
+            margin-top: 100vh;
+        }
+
+        .debug {
+            position: fixed;
+            background-color: rgba(255,255,255,.5);
+            padding: 10px;
+            font-size: .8rem;
+            z-index: 99;
+            top: 0;
+            left: 0;
+        }
+
+        .jumbotron {
+            background-color: transparent;
+        }
+
+    </style>
+    <title>Three JS</title>
+</head>
+<body>
+<div class="debug">
+    <div class="camX">CamX: <span></span></div>
+    <div class="camY">CamY: <span></span></div>
+    <div class="camZ">CamZ: <span></span></div>
+    <br>
+    <div class="cam_rotX">cam_rotX: <span></span></div>
+    <div class="cam_rotY">cam_rotY: <span></span></div>
+    <div class="cam_rotZ">cam_rotZ: <span></span></div>
+    <a class="btn btn-primary btn-lg copy" href="#" role="button">Copy</a>
+</div>
+<p style="margin-left: 500px;"><a class="btn btn-primary btn-lg moveCam" href="#" role="button">Advance »</a></p>
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+        integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+        integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+        crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"
+        integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI"
+        crossorigin="anonymous"></script>
+<script src="public/bundle.js"></script>
+</body>
+</html>
