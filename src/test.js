@@ -1,183 +1,182 @@
 import * as THREE from 'three'
+import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader'
 
-var camera, scene, renderer
-var plane
-var mouse,
-  raycaster,
-  isShiftDown = false
+import Stats from 'three/examples/jsm/libs/stats.module.js';
 
-var rollOverMesh, rollOverMaterial
-var cubeGeo, cubeMaterial
+import { GUI } from 'three/examples/jsm/libs/dat.gui.module.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader.js';
 
-var objects = []
+var params = {
+  envMap: 'EXR',
+  roughness: 0.0,
+  metalness: 0.0,
+  exposure: 1.0,
+  debug: false,
+};
 
-init()
-render()
+var container, stats;
+var camera, scene, renderer, controls;
+var torusMesh, planeMesh;
+var pngCubeRenderTarget, exrCubeRenderTarget;
+var pngBackground, exrBackground;
+
+init();
+animate();
 
 function init() {
-  camera = new THREE.PerspectiveCamera(
-    45,
-    window.innerWidth / window.innerHeight,
-    1,
-    10000
-  )
-  camera.position.set(500, 800, 1300)
-  camera.lookAt(0, 0, 0)
 
-  scene = new THREE.Scene()
-  scene.background = new THREE.Color(0xf0f0f0)
+  container = document.createElement( 'div' );
+  document.body.appendChild( container );
 
-  // roll-over helpers
+  camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 1, 1000 );
+  camera.position.set( 0, 0, 120 );
 
-  var rollOverGeo = new THREE.BoxBufferGeometry(50, 50, 50)
-  rollOverMaterial = new THREE.MeshBasicMaterial({
-    color: 0xff0000,
-    opacity: 0.5,
-    transparent: true,
-  })
-  rollOverMesh = new THREE.Mesh(rollOverGeo, rollOverMaterial)
-  scene.add(rollOverMesh)
+  scene = new THREE.Scene();
 
-  // cubes
+  renderer = new THREE.WebGLRenderer();
 
-  cubeGeo = new THREE.BoxBufferGeometry(50, 50, 50)
-  cubeMaterial = new THREE.MeshLambertMaterial({
-    color: 0xfeb74c,
-    map: new THREE.TextureLoader().load('textures/square.png'),
-  })
 
-  // grid
 
-  var gridHelper = new THREE.GridHelper(1000, 20)
-  scene.add(gridHelper)
+  var geometry = new THREE.TorusKnotBufferGeometry( 18, 8, 150, 20 );
+  var material = new THREE.MeshStandardMaterial( {
+    metalness: params.roughness,
+    roughness: params.metalness,
+    envMapIntensity: 1.0
+  } );
 
-  //
+  torusMesh = new THREE.Mesh( geometry, material );
+  scene.add( torusMesh );
 
-  raycaster = new THREE.Raycaster()
-  mouse = new THREE.Vector2()
+  var geometry = new THREE.PlaneBufferGeometry( 200, 200 );
+  var material = new THREE.MeshBasicMaterial();
 
-  var geometry = new THREE.PlaneBufferGeometry(1000, 1000)
-  geometry.rotateX(-Math.PI / 2)
+  planeMesh = new THREE.Mesh( geometry, material );
+  planeMesh.position.y = - 50;
+  planeMesh.rotation.x = - Math.PI * 0.5;
+  scene.add( planeMesh );
 
-  plane = new THREE.Mesh(
-    geometry,
-    new THREE.MeshBasicMaterial({ visible: false })
-  )
-  scene.add(plane)
+  THREE.DefaultLoadingManager.onLoad = function ( ) {
 
-  objects.push(plane)
+    pmremGenerator.dispose();
 
-  // lights
+  };
 
-  var ambientLight = new THREE.AmbientLight(0x606060)
-  scene.add(ambientLight)
+  new EXRLoader()
+    .setDataType( THREE.UnsignedByteType )
+    .load( 'textures/GCanyon_C_YumaPoint_3k.exr', function ( texture ) {
 
-  var directionalLight = new THREE.DirectionalLight(0xffffff)
-  directionalLight.position.set(1, 0.75, 0.5).normalize()
-  scene.add(directionalLight)
+      exrCubeRenderTarget = pmremGenerator.fromEquirectangular( texture );
+      exrBackground = exrCubeRenderTarget.texture;
 
-  renderer = new THREE.WebGLRenderer({ antialias: true })
-  renderer.setPixelRatio(window.devicePixelRatio)
-  renderer.setSize(window.innerWidth, window.innerHeight)
-  document.body.appendChild(renderer.domElement)
+      texture.dispose();
 
-  document.addEventListener('mousemove', onDocumentMouseMove, false)
-  document.addEventListener('mousedown', onDocumentMouseDown, false)
-  document.addEventListener('keydown', onDocumentKeyDown, false)
-  document.addEventListener('keyup', onDocumentKeyUp, false)
+    } );
 
-  //
+  new THREE.TextureLoader().load( 'textures/equirectangular.png', function ( texture ) {
 
-  window.addEventListener('resize', onWindowResize, false)
+    texture.encoding = THREE.sRGBEncoding;
+
+    pngCubeRenderTarget = pmremGenerator.fromEquirectangular( texture );
+
+    pngBackground = pngCubeRenderTarget.texture;
+
+    texture.dispose();
+
+  } );
+
+  var pmremGenerator = new THREE.PMREMGenerator( renderer );
+  pmremGenerator.compileEquirectangularShader();
+
+  renderer.setPixelRatio( window.devicePixelRatio );
+  renderer.setSize( window.innerWidth, window.innerHeight );
+
+  container.appendChild( renderer.domElement );
+
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.outputEncoding = THREE.sRGBEncoding;
+
+  stats = new Stats();
+  container.appendChild( stats.dom );
+
+  controls = new OrbitControls( camera, renderer.domElement );
+  controls.minDistance = 50;
+  controls.maxDistance = 300;
+
+  window.addEventListener( 'resize', onWindowResize, false );
+
+  var gui = new GUI();
+
+  gui.add( params, 'envMap', [ 'EXR', 'PNG' ] );
+  gui.add( params, 'roughness', 0, 1, 0.01 );
+  gui.add( params, 'metalness', 0, 1, 0.01 );
+  gui.add( params, 'exposure', 0, 2, 0.01 );
+  gui.add( params, 'debug', false );
+  gui.open();
+
 }
 
 function onWindowResize() {
-  camera.aspect = window.innerWidth / window.innerHeight
-  camera.updateProjectionMatrix()
 
-  renderer.setSize(window.innerWidth, window.innerHeight)
+  var width = window.innerWidth;
+  var height = window.innerHeight;
+
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+
+  renderer.setSize( width, height );
+
 }
 
-function onDocumentMouseMove(event) {
-  event.preventDefault()
+function animate() {
 
-  mouse.set(
-    (event.clientX / window.innerWidth) * 2 - 1,
-    -(event.clientY / window.innerHeight) * 2 + 1
-  )
+  requestAnimationFrame( animate );
 
-  raycaster.setFromCamera(mouse, camera)
+  stats.begin();
+  render();
+  stats.end();
 
-  var intersects = raycaster.intersectObjects(objects)
-
-  if (intersects.length > 0) {
-    var intersect = intersects[0]
-
-    rollOverMesh.position.copy(intersect.point).add(intersect.face.normal)
-    rollOverMesh.position
-      .divideScalar(50)
-      .floor()
-      .multiplyScalar(50)
-      .addScalar(25)
-  }
-
-  render()
-}
-
-function onDocumentMouseDown(event) {
-  event.preventDefault()
-
-  mouse.set(
-    (event.clientX / window.innerWidth) * 2 - 1,
-    -(event.clientY / window.innerHeight) * 2 + 1
-  )
-
-  raycaster.setFromCamera(mouse, camera)
-
-  var intersects = raycaster.intersectObjects(objects)
-
-  if (intersects.length > 0) {
-    var intersect = intersects[0]
-
-    // delete cube
-
-    if (isShiftDown) {
-      if (intersect.object !== plane) {
-        scene.remove(intersect.object)
-
-        objects.splice(objects.indexOf(intersect.object), 1)
-      }
-
-      // create cube
-    } else {
-      var voxel = new THREE.Mesh(cubeGeo, cubeMaterial)
-      voxel.position.copy(intersect.point).add(intersect.face.normal)
-      voxel.position.divideScalar(50).floor().multiplyScalar(50).addScalar(25)
-      scene.add(voxel)
-
-      objects.push(voxel)
-    }
-
-    render()
-  }
-}
-
-function onDocumentKeyDown(event) {
-  switch (event.keyCode) {
-    case 16:
-      isShiftDown = true
-      break
-  }
-}
-
-function onDocumentKeyUp(event) {
-  switch (event.keyCode) {
-    case 16:
-      isShiftDown = false
-      break
-  }
 }
 
 function render() {
-  renderer.render(scene, camera)
+
+  torusMesh.material.roughness = params.roughness;
+  torusMesh.material.metalness = params.metalness;
+
+  var newEnvMap = torusMesh.material.envMap;
+  var background = scene.background;
+
+  switch ( params.envMap ) {
+
+    case 'EXR':
+      newEnvMap = exrCubeRenderTarget ? exrCubeRenderTarget.texture : null;
+      background = exrBackground;
+      break;
+    case 'PNG':
+      newEnvMap = pngCubeRenderTarget ? pngCubeRenderTarget.texture : null;
+      background = pngBackground;
+      break;
+
+  }
+
+  if ( newEnvMap !== torusMesh.material.envMap ) {
+
+    torusMesh.material.envMap = newEnvMap;
+    torusMesh.material.needsUpdate = true;
+
+    planeMesh.material.map = newEnvMap;
+    planeMesh.material.needsUpdate = true;
+
+  }
+
+  torusMesh.rotation.y += 0.005;
+  planeMesh.visible = params.debug;
+
+  scene.background = background;
+  renderer.toneMappingExposure = params.exposure;
+
+  renderer.render( scene, camera );
+
 }
+
+		
