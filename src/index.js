@@ -12,17 +12,25 @@ import {GUI} from 'three/examples/jsm/libs/dat.gui.module.js';
 //import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 //import { LuminosityShader } from 'three/examples/jsm/shaders/LuminosityShader.js';
 
+
+
+import { SSAOPass } from 'three/examples//jsm/postprocessing/SSAOPass.js';
+
 import {EXRLoader} from 'three/examples/jsm/loaders/EXRLoader.js';
-//import { GUI } from './jsm/libs/dat.gui.module.js';
 
 import TWEEN from '@tweenjs/tween.js'
+
+/********************************/
+/*      Variables          ******/
+/********************************/
+
 
 var camera, scene, renderer, controls, composer, glbCamera, mixer, clock
 var plane
 
 var objects = []
 
-var cube
+var cube, gltf
 
 var gblModel
 
@@ -55,11 +63,7 @@ var maxSteps = 6;
 
 
 var animationSteps = {
-  0: {
-    position: {x: -7.233319575194626, y: 5.722245762381603, z: -0.6444531650922332},
-    rotation: {x: -0.1235754167250468, y: -1.2889187567534672, z: -0.2314516520203076},
-    time: 2000
-  },
+  0: { position: {x:-7.850569867042744, y:12.677264776524792, z: 7.000169379286243}, rotation: {x: -1.1783858603374395, y: -0.5867081586601256, z: -0.9288478810385351}, time: 4000},
   1: {
     position: {x: -8.42215068334131, y: 5.30115278216533, z: 2.1520497384899415},
     rotation: {x: -0.025593206001384806, y: -0.9316600800423, z: -0.14006812562828008},
@@ -121,199 +125,192 @@ var torusMesh, planeMesh;
 
 var directionalLight, light
 
-init()
+/********************************/
+/*      Loader Promise          */
+/********************************/
 
-
-function init() {
-  clock = new THREE.Clock(); // create clock
+var loaderPromise = new Promise(function(resolve, reject) {
   var gtflLoader = new GLTFLoader();
+  function loadDone(x) {
+    console.log("loader successfully completed loading GLB");
+    resolve(x); // it went ok!
+  }
 
-  /*
-  camera = new THREE.PerspectiveCamera(
-    90,
-    window.innerWidth / window.innerHeight,
-    .001,
-    10000
-  )
-
-   */
-  //camera.position.set(-9.365242993833716, 5.599999999999999, 0.48)
-  //camera.rotation.set(-1, -0.9, -1)
-  //camera.lookAt(0, 0, 0)
-  //camera.position.set(animationSteps[0].position.x,animationSteps[0].position.y,animationSteps[0].position.z)
-  //camera.rotation.set(animationSteps[0].rotation.x,animationSteps[0].rotation.y,animationSteps[0].rotation.z)
-
-  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-
-
-  scene = new THREE.Scene()
-  scene.background = new THREE.Color(0x000000)
-
-
-  //raycaster = new THREE.Raycaster()
-  //mouse = new THREE.Vector2()
-
-  var geometry = new THREE.PlaneBufferGeometry(1000, 1000)
-  geometry.rotateX(-Math.PI / 2)
-
-  plane = new THREE.Mesh(
-    geometry,
-    new THREE.MeshBasicMaterial({visible: false})
-  )
-  scene.add(plane)
-
-  objects.push(plane)
-
-  gtflLoader.load('model/final1.glb', function (gltf) {
-    gltf.scene.traverse(function (child) {
-      if (child.isMesh) {
-        child.castShadow = true; //default is false
-        child.receiveShadow = true; //default
-        switch (child.name) {
-
-          case 'Water':
-            child.castShadow = false; //default is false
-            child.receiveShadow = true; //default
-            child.material.opacity = 0.7
-            break;
-          case 'Cloud001':
-            child.receiveShadow = false; //default
-            break;
-          case 'Cloud002':
-            child.receiveShadow = false; //default
-            break;
-          case 'Cloud003':
-            child.receiveShadow = false; //default
-            break;
-          case 'Cloud004':
-            child.receiveShadow = false; //default
-            break;
-          case 'Island':
-            child.castShadow = false; //default is false
-            child.receiveShadow = true; //default
-            break;
-          case 'Tree_Trunk':
-            child.castShadow = true; //default is false
-            child.receiveShadow = false; //default
-            break;
-          case 'Leaf001':
-            child.castShadow = true; //default is false
-            child.receiveShadow = false; //default
-            break;
-          case 'Leaf002':
-            child.castShadow = true; //default is false
-            child.receiveShadow = false; //default
-            break;
-          case 'Leaf003':
-            child.castShadow = true; //default is false
-            child.receiveShadow = false; //default
-            break;
-          case 'Leaf004':
-            child.castShadow = true; //default is false
-            child.receiveShadow = false; //default
-            break;
-          case 'Leaf005':
-            child.castShadow = true; //default is false
-            child.receiveShadow = false; //default
-            break;
-          case 'Leaf006':
-            child.castShadow = true; //default is false
-            child.receiveShadow = false; //default
-            break;
-        }
-
-
-        objects.push(child)
-      }
-
-      if (child.lights && child.lights.length) {
-        for (i = 0; i < child.lights.length; i++) {
-          var lamp = child.lights[i];
-          scene.add(lamp);
-        }
-      }
-    })
-    console.log(objects)
-
-    glbCamera = gltf.cameras[0]
-    gblModel = gltf
-    scene.add(gblModel.scene);
-
-    var blenderCamera = glbCamera
-    camera.position.x = blenderCamera.parent.position.x;
-    camera.position.y = blenderCamera.parent.position.y;
-    camera.position.z = blenderCamera.parent.position.z;
-
-    camera.aspect = blenderCamera.aspect;
-    camera.fov = blenderCamera.fov;
-    camera.far = blenderCamera.far;
-    camera.near = blenderCamera.near;
-
-    var animations = gltf.animations;
-
-    mixer = new THREE.AnimationMixer(gblModel.scene);
-    var NumberOfAnimations = animations.length;
-
-    console.log("animation: ", animations)
-    for (var i = 0; i < NumberOfAnimations; i++) {
-      mixer.clipAction(animations[i]).play();
-    }
-
-  }, undefined, function (error) {
+  gtflLoader.load('model/Lowpoly Island 9-Anim.glb', loadDone, undefined,  function (error) {
 
     console.error(error);
 
   });
+});
+
+loaderPromise.
+then(function(promise) {
+  gltf = promise
+  init(); //initialize the render
+  //requestAnimationFrame( render );
+}, function(err) {
+  console.log(err);
+});
+
+
+/********************************/
+/*      INIT function           */
+/********************************/
+
+function init() {
+  clock = new THREE.Clock(); // create clock
+
+  scene = new THREE.Scene()
+  //scene.background = new THREE.Color(0x000000)
+
+  /********************************/
+  /*      GBL Loader              */
+  /********************************/
+
+  //load scene and set some settings for different meshes
+  gltf.scene.traverse(function (child) {
+    if (child.isMesh) {
+      //child.castShadow = true; //default is false
+      //child.receiveShadow = true; //default
+      switch (child.name) {
+
+        case 'Water':
+          child.castShadow = false; //default is false
+          child.receiveShadow = true; //default
+          child.material.opacity = 0.7
+          break;
+        case 'Cloud001':
+          child.receiveShadow = false; //default
+          //child.material.opacity = 0.45
+          break;
+        case 'Cloud002':
+          child.receiveShadow = false; //default
+          //child.material.opacity = 0.422
+          break;
+        case 'Cloud003':
+          child.receiveShadow = false; //default
+          //child.material.opacity = 0.32
+          break;
+        case 'Cloud004':
+          child.receiveShadow = false; //default
+          //child.material.opacity = 0.554
+          break;
+        case 'Island':
+          child.castShadow = false; //default is false
+          child.receiveShadow = true; //default
+          break;
+        case 'Tree_Trunk':
+          child.castShadow = true; //default is false
+          child.receiveShadow = false; //default
+          break;
+        case 'Leaf001':
+          child.castShadow = true; //default is false
+          child.receiveShadow = false; //default
+          break;
+        case 'Leaf002':
+          child.castShadow = true; //default is false
+          child.receiveShadow = false; //default
+          break;
+        case 'Leaf003':
+          child.castShadow = true; //default is false
+          child.receiveShadow = false; //default
+          break;
+        case 'Leaf004':
+          child.castShadow = true; //default is false
+          child.receiveShadow = false; //default
+          break;
+        case 'Leaf005':
+          child.castShadow = true; //default is false
+          child.receiveShadow = false; //default
+          break;
+        case 'Leaf006':
+          child.castShadow = true; //default is false
+          child.receiveShadow = false; //default
+          break;
+      }
+
+      objects.push(child)
+    }
+
+
+    //doesnt seem to work, light are children of point3D meshes
+    /*
+    if (child.lights && child.lights.length) {
+      console.log("Light "+ i +  " : ", child.lights)
+      for (i = 0; i < child.lights.length; i++) {
+        var lamp = child.lights[i];
+        console.log("Light "+ i +  " : ", lamp)
+        scene.add(lamp);
+      }
+    }
+     */
+  })
+  console.log(gltf)
+
+  gblModel = gltf
+  scene.add(gblModel.scene);
+
+  //import cam from glb file
+  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.001, 10000);
+  camera.position.set(animationSteps[0].position.x,animationSteps[0].position.y,animationSteps[0].position.z)
+  camera.rotation.set(animationSteps[0].rotation.x,animationSteps[0].rotation.y,animationSteps[0].rotation.z)
 
 
   /*
-  var geometry = new THREE.TorusKnotBufferGeometry( 18, 8, 150, 20 );
-  var material = new THREE.MeshStandardMaterial( {
-    metalness: params.roughness,
-    roughness: params.metalness,
-    envMapIntensity: 1.0
-  } );
+  glbCamera = gltf.cameras[0]
+  var blenderCamera = glbCamera
+  camera.position.x = blenderCamera.parent.position.x;
+  camera.position.y = blenderCamera.parent.position.y;
+  camera.position.z = blenderCamera.parent.position.z;
 
-  torusMesh = new THREE.Mesh( geometry, material );
-  scene.add( torusMesh );
+  //amera.aspect = blenderCamera.aspect;
+  camera.fov = blenderCamera.fov;
+  camera.far = blenderCamera.far;
+  camera.near = blenderCamera.near;
   */
+  var animations = gltf.animations;
+
+  mixer = new THREE.AnimationMixer(gblModel.scene);
+  var NumberOfAnimations = animations.length;
+
+  console.log("animation: ", animations)
+
+  for (var i = 0; i < NumberOfAnimations; i++) {
+    mixer.clipAction(animations[i]).play();
+  }
+
+
+  /********************************/
+  /*      EXR Loader              */
+  /********************************/
+
 
   THREE.DefaultLoadingManager.onLoad = function () {
-
     pmremGenerator.dispose();
-
   };
 
   new EXRLoader()
     .setDataType(THREE.UnsignedByteType)
     .load('textures/GCanyon_C_YumaPoint_1k.exr', function (texture) {
-
       exrCubeRenderTarget = pmremGenerator.fromEquirectangular(texture);
       exrBackground = exrCubeRenderTarget.texture;
 
       texture.dispose();
-
     });
 
   new THREE.TextureLoader().load('textures/equirectangular.png', function (texture) {
-
     texture.encoding = THREE.sRGBEncoding;
-
     pngCubeRenderTarget = pmremGenerator.fromEquirectangular(texture);
-
     pngBackground = pngCubeRenderTarget.texture;
 
     texture.dispose();
-
   });
 
-  /*
-  var geometry = new THREE.BoxGeometry( 1, 1, 1 );
-  var material = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
-  var cube = new THREE.Mesh( geometry, material );
-  scene.add( cube );
-  */
-  // lights
+
+
+  /********************************/
+  /*      Light                   */
+  /********************************/
 
   var ambientLight = new THREE.AmbientLight(0x606060)
   //scene.add(ambientLight)
@@ -343,14 +340,25 @@ function init() {
   light.shadow.mapSize.height = 4096; // default
   light.shadow.camera.near = 0.5;       // default
   light.shadow.camera.far = 500      // default
-*/
+
   var geometry = new THREE.BoxGeometry(1, 1, 1);
   var material = new THREE.MeshBasicMaterial({color: 0x00ff00});
   cube = new THREE.Mesh(geometry, material);
   cube.position.set(lightOptions.position.x, lightOptions.position.y, lightOptions.position.z);
+
+   */
   //scene.add( cube );
 
-  renderer = new THREE.WebGLRenderer({antialias: true})
+
+  /********************************/
+  /*      Renderer                */
+  /********************************/
+
+  //renderer = new THREE.WebGLRenderer({antialias: true})
+  renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    alpha: true
+  });
   renderer.setPixelRatio(window.devicePixelRatio)
   renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.shadowMap.enabled = true;
@@ -359,21 +367,26 @@ function init() {
   //Create a helper for the shadow camera (optional)
   //var helper = new THREE.CameraHelper( light.shadow.camera );
   //scene.add( helper )
-  /*
+
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.outputEncoding = THREE.sRGBEncoding;
-  */
+
   var pmremGenerator = new THREE.PMREMGenerator(renderer);
   pmremGenerator.compileEquirectangularShader();
 
   composer = new EffectComposer(renderer);
-
 
   var renderPass = new RenderPass(scene, camera);
   composer.addPass(renderPass);
 
   var bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.3, 0.4, 0.85)
   composer.addPass(bloomPass);
+
+
+
+  /********************************/
+  /*      Control                 */
+  /********************************/
 
   controls = new OrbitControls(camera, renderer.domElement)
   //controls = new TrackballControls(camera, renderer.domElement)
@@ -389,9 +402,6 @@ function init() {
     RIGHT: 39, // right arrow
     BOTTOM: 40 // down arrow
   }
-  //camera.position.set(animationSteps[0].position.x,animationSteps[0].position.y,animationSteps[0].position.z)
-  //camera.rotation.set(animationSteps[0].rotation.x,animationSteps[0].rotation.y,animationSteps[0].rotation.z)
-
 
   /*
   controls.minDistance = 5
@@ -401,11 +411,17 @@ function init() {
   */
 
   //var camera.position = {x:10, y:10, z:50}
-  var _target = {x: 20, y: 20, z: 50}
+  //var _target = {x: 20, y: 20, z: 50}
+
+
+
+
+  /********************************/
+  /*      Events & Listners       */
+  /********************************/
 
   $('.moveCam').on('click', function (e) {
     e.preventDefault()
-    var target = new THREE.Vector3(10, -20, 20); // create on init
 
     if (animStep < maxSteps - 1) {
       animStep++
@@ -461,7 +477,11 @@ function init() {
   })
 
   //animate to first step
-  //animateCam(0)
+  animateCam(0)
+
+  /********************************/
+  /*      GUI                     */
+  /********************************/
 
   var gui = new GUI();
 
@@ -473,11 +493,175 @@ function init() {
   gui.add(lightOptions.rotation, 'y', -500, 500, 1.0);
   gui.add(lightOptions.rotation, 'z', -500, 500, 1.0);
 
+  gui.add( params, 'envMap', [ 'EXR', 'PNG' ] );
+  gui.add( params, 'roughness', 0, 1, 0.01 );
+  gui.add( params, 'metalness', 0, 1, 0.01 );
+  gui.add( params, 'exposure', 0, 2, 0.01 );
+
   //gui.add( lightOptions , 'debug', false );
   gui.open();
 
   //controls.handleResize();
 }
+
+
+/********************************/
+/*      RENDER                  */
+/********************************/
+
+function render() {
+
+  if (gblModel) {
+    exr()
+    //animationMi+xer
+    var delta = clock.getDelta();
+    //mixer.update(delta); // update animation mixer
+  }
+
+  // RAF
+  requestAnimationFrame(render)
+
+  //light.position.set(lightOptions.position.x, lightOptions.position.y, lightOptions.position.z)
+  //light.rotation.set(lightOptions.rotation.x, lightOptions.rotation.y, lightOptions.rotation.z)
+  //cube.position.set(lightOptions.position.x, lightOptions.position.y, lightOptions.position.z)
+  renderer.render(scene, camera)
+  //controls.update()
+  TWEEN.update();
+
+  //composer.render(scene, camera)
+}
+
+function debug() {
+
+  $camX.text(camera.position.x)
+  $camY.text(camera.position.y)
+  $camZ.text(camera.position.z)
+
+  $cam_rotX.text(camera.rotation.x)
+  $cam_rotY.text(camera.rotation.y)
+  $cam_rotZ.text(camera.rotation.z)
+
+}
+
+
+function onWindowResize() {
+  camera.aspect = window.innerWidth / window.innerHeight
+  camera.updateProjectionMatrix()
+  //controls.handleResize(); // for TrackballControls
+
+  renderer.setSize(window.innerWidth, window.innerHeight)
+}
+
+function onKeyDown (e){
+  var delta = .1
+  //console.log(e)
+
+  switch(e.key){
+    case "a" : //left arrow
+      camera.position.x = camera.position.x - delta;
+      camera.updateProjectionMatrix();
+      break;
+    case "w" : // up arrow
+      camera.position.y = camera.position.y - delta;
+      camera.updateProjectionMatrix();
+      break;
+    case "d" : // right arrow
+      camera.position.x = camera.position.x + delta;
+      camera.updateProjectionMatrix();
+      break;
+    case "s" : //down arrow
+      camera.position.y = camera.position.y + delta;
+      camera.updateProjectionMatrix();
+      break;
+  }
+}
+
+
+/********************************/
+/*      Helper Funcs            */
+/********************************/
+
+function exr() {
+
+  //objects[2].material.roughness = params.roughness;
+  //objects[2].material.metalness = params.metalness;
+  /*
+  objects.forEach(function (object) {
+    object.material.roughness = params.roughness;
+    object.material.metalness = params.metalness;
+  });
+
+   */
+
+  var newEnvMap = objects[2].material.envMap;
+  var background = scene.background;
+
+  switch (params.envMap) {
+
+    case 'EXR':
+      newEnvMap = exrCubeRenderTarget ? exrCubeRenderTarget.texture : null;
+      background = exrBackground;
+      break;
+    case 'PNG':
+      newEnvMap = pngCubeRenderTarget ? pngCubeRenderTarget.texture : null;
+      background = pngBackground;
+      break;
+
+  }
+
+
+  if (newEnvMap !== objects[2].material.envMap) {
+
+    objects[2].material.envMap = newEnvMap;
+    objects[2].material.needsUpdate = true;
+
+    //plane.material.map = newEnvMap;
+    //plane.material.needsUpdate = true;
+
+
+    objects.forEach(function (object) {
+      //console.log(object.name)
+      //object.material.roughness = params.roughness;
+      //object.material.metalness = params.metalness;
+      object.material.envMap = newEnvMap;
+      object.material.needsUpdate = true;
+    });
+
+  }
+
+  //torusMesh.rotation.y += 0.005;
+  //planeMesh.visible = params.debug;
+
+  //scene.background = background;
+  renderer.toneMappingExposure = params.exposure;
+}
+
+
+/* Animates a Vector3 to the target */
+function animateVector3(vectorToAnimate, target, options) {
+  options = options || {};
+  // get targets from options or set to defaults
+  var to = target || THREE.Vector3(),
+    easing = options.easing || TWEEN.Easing.Quadratic.In,
+    duration = options.duration || 2000;
+  // create the tween
+  var tweenVector3 = new TWEEN.Tween(vectorToAnimate)
+    .to({x: to.x, y: to.y, z: to.z,}, duration)
+    .easing(easing)
+    .onUpdate(function (d) {
+      if (options.update) {
+        options.update(d);
+      }
+    })
+    .onComplete(function () {
+      if (options.callback) options.callback();
+    });
+  // start the tween
+  tweenVector3.start();
+  // return the tween in case we want to manipulate it later on
+  return tweenVector3;
+}
+
 
 var posTween, rotTween
 
@@ -512,143 +696,6 @@ function animateCam(step) {
       isAnimating = false;
     }
   })
-}
-
-function onWindowResize() {
-  camera.aspect = window.innerWidth / window.innerHeight
-  camera.updateProjectionMatrix()
-  //controls.handleResize(); // for TrackballControls
-
-  renderer.setSize(window.innerWidth, window.innerHeight)
-}
-
-function onKeyDown (e){
-  var delta = .1
-  //console.log(e)
-
-  switch(e.key){
-    case "a" : //left arrow
-      camera.position.x = camera.position.x - delta;
-      camera.updateProjectionMatrix();
-      break;
-    case "w" : // up arrow
-      camera.position.y = camera.position.y - delta;
-      camera.updateProjectionMatrix();
-      break;
-    case "d" : // right arrow
-      camera.position.x = camera.position.x + delta;
-      camera.updateProjectionMatrix();
-      break;
-    case "s" : //down arrow
-      camera.position.y = camera.position.y + delta;
-      camera.updateProjectionMatrix();
-      break;
-  }
-}
-
-function render() {
-
-  if (gblModel) {
-    exr()
-    //animationMi+xer
-    var delta = clock.getDelta();
-    mixer.update(delta); // update animation mixer
-  }
-
-  // RAF
-  requestAnimationFrame(render)
-
-  //light.position.set(lightOptions.position.x, lightOptions.position.y, lightOptions.position.z)
-  //light.rotation.set(lightOptions.rotation.x, lightOptions.rotation.y, lightOptions.rotation.z)
-  //cube.position.set(lightOptions.position.x, lightOptions.position.y, lightOptions.position.z)
-  //renderer.render(scene, camera)
-  //controls.update()
-  TWEEN.update();
-
-  composer.render(scene, camera)
-}
-
-function debug() {
-
-  $camX.text(camera.position.x)
-  $camY.text(camera.position.y)
-  $camZ.text(camera.position.z)
-
-  $cam_rotX.text(camera.rotation.x)
-  $cam_rotY.text(camera.rotation.y)
-  $cam_rotZ.text(camera.rotation.z)
-
-}
-
-function exr() {
-
-  objects[2].material.roughness = params.roughness;
-  objects[2].material.metalness = params.metalness;
-
-  var newEnvMap = objects[2].material.envMap;
-  var background = scene.background;
-
-  switch (params.envMap) {
-
-    case 'EXR':
-      newEnvMap = exrCubeRenderTarget ? exrCubeRenderTarget.texture : null;
-      background = exrBackground;
-      break;
-    case 'PNG':
-      newEnvMap = pngCubeRenderTarget ? pngCubeRenderTarget.texture : null;
-      background = pngBackground;
-      break;
-
-  }
-
-  if (newEnvMap !== objects[2].material.envMap) {
-
-    objects[2].material.envMap = newEnvMap;
-    objects[2].material.needsUpdate = true;
-
-    //plane.material.map = newEnvMap;
-    //plane.material.needsUpdate = true;
-
-    objects.forEach(function (object) {
-      //console.log(object.name)
-      //object.material.roughness = params.roughness;
-      //object.material.metalness = params.metalness;
-      object.material.envMap = newEnvMap;
-      object.material.needsUpdate = true;
-    });
-  }
-
-  //torusMesh.rotation.y += 0.005;
-  //planeMesh.visible = params.debug;
-
-  scene.background = background;
-  renderer.toneMappingExposure = params.exposure;
-}
-
-
-/* Animates a Vector3 to the target */
-function animateVector3(vectorToAnimate, target, options) {
-  options = options || {};
-  // get targets from options or set to defaults
-  var to = target || THREE.Vector3(),
-    easing = options.easing || TWEEN.Easing.Quadratic.In,
-    duration = options.duration || 2000;
-  // create the tween
-  var tweenVector3 = new TWEEN.Tween(vectorToAnimate)
-    .to({x: to.x, y: to.y, z: to.z,}, duration)
-    .easing(easing)
-    .onUpdate(function (d) {
-      if (options.update) {
-        options.update(d);
-      }
-    })
-    .onComplete(function () {
-      if (options.callback) options.callback();
-    });
-  // start the tween
-  tweenVector3.start();
-  // return the tween in case we want to manipulate it later on
-  return tweenVector3;
 }
 
 
