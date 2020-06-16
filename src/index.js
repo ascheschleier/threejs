@@ -59,42 +59,21 @@ var lightOptions = {
 // animation array:
 var isAnimating = false;
 var animStep = 0;
-var maxSteps = 6;
+
 
 
 var animationSteps = {
-  0: { position: {x:-7.850569867042744, y:12.677264776524792, z: 7.000169379286243}, rotation: {x: -1.1783858603374395, y: -0.5867081586601256, z: -0.9288478810385351}, time: 4000},
-  1: {
-    position: {x: -8.42215068334131, y: 5.30115278216533, z: 2.1520497384899415},
-    rotation: {x: -0.025593206001384806, y: -0.9316600800423, z: -0.14006812562828008},
-    time: 1000
-  },
-  2: {
-    position: {x: -7.3875623750970005, y: 6.078982661778451, z: 3.7431952698246196},
-    rotation: {x: -0.05938755831712378, y: -0.7149316781008158, z: -0.2262236204387986},
-    time: 3000
-  },
-  3: {
-    position: {x: -11.945924443025081, y: 5.024836683047582, z: 4.056832564404985},
-    rotation: {x: 0.34205179864812274, y: -0.8210728876892635, z: 0.050442485041797186},
-    time: 2000
-  },
-  4: {
-    position: {x: -8.116540803810677, y: 6.574187668981772, z: -0.6176315900324942},
-    rotation: {x: -1.594787517211319, y: -0.8381902633241617, z: -1.6030620930090589},
-    time: 2000
-  },
-  5: {
-    position: {x: -11.959948520316736, y: 3.550115845992809, z: -1.0335432484657927},
-    rotation: {x: 2.3121119295008854, y: -1.268398120394207, z: 2.4932651908345145},
-    time: 4000
-  },
-  6: {
-    position: {x: -308.9977499978986, y: 245.12364464525552, z: -25.122473006511814},
-    rotation: {x: -1.6729287065864442, y: -0.8976173132203668, z: -1.701139428750363},
-    time: 6000
-  },
+  0: { position: {x:15.402419031730028, y:0.8644392379961215, z: 6.91182062569953}, rotation: {x: -0.1418727215609679, y: 1.2732181882233577, z: 0.1357153308110989}, time: 2000},
+  1: { position: {x:15.295914956368039, y:0.7465254730224472, z: 7.289310603688933}, rotation: {x: -0.07198703254004861, y: 0.9553206385991876, z: 0.05881117617610776}, time: 2000},
+  2:{ position: {x:14.904069166462264, y:1.3076345502176714, z: 8.226362310435158}, rotation: {x: -0.10876314205771008, y: 0.7045975732808462, z: 0.07061038025150695}, time: 2000},
+  3:{ position: {x:4.725241209623325, y:0.7985089083807053, z: 8.995521316024004}, rotation: {x: -0.09223815738734413, y: 0.4873675118995367, z: 0.04329112396070809}, time: 4000},
+  4: { position: {x:3.9030383054489004, y:2.573311636082828, z: 12.54121086132899}, rotation: {x: -0.20237944136598865, y: 0.2959144836273942, z: 0.05976471233272036}, time: 4000},
+
 }
+
+//var maxSteps = 6;
+var maxSteps = Object.keys(animationSteps).length
+//console.log("animatiuon length = " + maxSteps)
 
 /*
 var animationSteps = {
@@ -136,7 +115,7 @@ var loaderPromise = new Promise(function(resolve, reject) {
     resolve(x); // it went ok!
   }
 
-  gtflLoader.load('model/Lowpoly Island 9-Anim.glb', loadDone, undefined,  function (error) {
+  gtflLoader.load('model/landscape.glb', loadDone, undefined,  function (error) {
 
     console.error(error);
 
@@ -248,6 +227,7 @@ function init() {
   console.log(gltf)
 
   gblModel = gltf
+  //gblModel.scene.scale.set(10,10,10)
   scene.add(gblModel.scene);
 
   //import cam from glb file
@@ -477,7 +457,7 @@ function init() {
   })
 
   //animate to first step
-  animateCam(0)
+  //animateCam(0)
 
   /********************************/
   /*      GUI                     */

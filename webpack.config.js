@@ -13,7 +13,7 @@ module.exports = {
       jQuery: "jquery"
     })
   ],
-  entry: './src/index.js',
+  entry: './src/test.js',
   output: {
     path: path.resolve(__dirname, 'public'),
     filename: 'bundle.js',
