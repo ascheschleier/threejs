@@ -45,6 +45,7 @@ var animationSteps = {
   3:{ position: {x:4.725241209623325, y:0.7985089083807053, z: 8.995521316024004}, rotation: {x: -0.09223815738734413, y: 0.4873675118995367, z: 0.04329112396070809}, time: 4000},
   4: { position: {x:3.9030383054489004, y:2.573311636082828, z: 12.54121086132899}, rotation: {x: -0.20237944136598865, y: 0.2959144836273942, z: 0.05976471233272036}, time: 3000},
   5: { position: {x:3.7618429695199187, y:0.8752596469082694, z: 10.987039797831278}, rotation: {x: -0.0720431887135113, y: 0.11017487926187171, z: 0.007934867846646643}, time: 1000},
+  6: { position: {x:3.7618429695199187, y:0.8752596469082694, z: 10.987039797831278}, rotation: {x: -0.0720431887135113, y: 0.11017487926187171, z: 0.007934867846646643}, time: 1000},
 }
   
 var maxSteps = Object.keys(animationSteps).length
@@ -128,6 +129,7 @@ function init() {
 
   //import cam from glb file
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.001, 10000);
+  //camera.position.set(0,0,20)
   camera.position.set(animationSteps[0].position.x,animationSteps[0].position.y,animationSteps[0].position.z)
   camera.rotation.set(animationSteps[0].rotation.x,animationSteps[0].rotation.y,animationSteps[0].rotation.z)
 
@@ -276,7 +278,8 @@ function init() {
       "}, time: " + 4000 +
       "},"
     */
-    console.log(camera.rotation.clone())
+    //console.log(camera.quaternion)
+    //console.log(camera.rotation.clone())
     var copyText = "new THREE.Quaternion().set("+camera.quaternion.x+","+camera.quaternion.y+","+camera.quaternion.z+","+camera.quaternion.w+")"
     var element = document.createElement('DIV');
 
@@ -309,7 +312,7 @@ function init() {
 
   setInterval(function () {
     debug()
-  }, 1500)
+  }, 200)
 
   $(window).scroll(function () {
     //scrollPoints()
@@ -319,8 +322,8 @@ function init() {
   //animateCam(0)
 
   //controls.handleResize();
-
-  scrollMagic()
+  setupScroll()
+  //scrollMagic()
 }
 
 
@@ -481,7 +484,7 @@ function animateCam(step) {
 
 
   //TWEEN function with animateVector3
-  /*
+
   //stop old animation if there is one
   if (posTween != undefined) posTween.stop()
   if (rotTween != undefined) rotTween.stop()
@@ -507,11 +510,10 @@ function animateCam(step) {
       isAnimating = false;
     }
   })
-   */
+
 
 
 }
-
 
 function scrollPoints() {
   var $animElement = $('.setFrame');
@@ -530,9 +532,7 @@ function scrollPoints() {
 
     }
   })
-
 }
-
 
 function isElementInViewport(el) {
   var rect = el.getBoundingClientRect();
@@ -574,43 +574,32 @@ $.fn.isOnScreen = function () {
   bounds.bottom = bounds.top + this.outerHeight();
 
   return (!(viewport.right < bounds.left || viewport.left > bounds.right || viewport.bottom < bounds.top || viewport.top > bounds.bottom));
-
 };
 
 
-var cameraPos0   // initial camera position
-var cameraUp0    // initial camera up
-var cameraZoom   // camera zoom
-var iniQ         // initial quaternion
-var endQ         // target quaternion
-var curQ         // temp quaternion during slerp
-var vec3         // generic vector object
+var iniPos, iniRot
+var endPos, endRot
+var curPos, curRot
 var tweenValue   // tweenable value
+
 
 function scrollMagic() {
   //const targetOrientation = new THREE.Quaternion().set(animationSteps[animStep].position.x, animationSteps[animStep].position.y, animationSteps[animStep].position.z, 1).normalize();
-  setup()
-  var start = new THREE.Quaternion().set(-0.02147109194872585,0.5432302992188002,0.013898749233087374,0.839194053238545)
-  var end = new THREE.Quaternion().set(-0.08215950257250292,0.3635366792805399,0.03220648046146977,0.9273907706953968)
 
-  // reset everything
-  endQ = new THREE.Quaternion()
-  iniQ = new THREE.Quaternion().copy(camera.quaternion)
-  curQ = new THREE.Quaternion()
-  vec3 = new THREE.Vector3()
+  iniPos = new THREE.Vector3(animationSteps[0].position.x,animationSteps[0].position.y,animationSteps[0].position.z)
+  endPos = new THREE.Vector3(animationSteps[1].position.x,animationSteps[1].position.y,animationSteps[1].position.z)
+
+  iniRot = new THREE.Vector3(animationSteps[0].rotation.x,animationSteps[0].rotation.y,animationSteps[0].rotation.z)
+  endRot = new THREE.Vector3(animationSteps[1].rotation.x,animationSteps[1].rotation.y,animationSteps[1].rotation.z)
+
   tweenValue = 0
-
-  //endQ.setFromEuler(euler)
-  endQ.copy(end)
-  var zoom = 120
 
   var controller = new ScrollMagic.Controller();
 
   var blockTween = TweenLite.to(this, 5, {
     tweenValue:1,
-    cameraZoom:zoom,
     onUpdate: function() {
-      onSlerpUpdate(this.progress())
+      updateTween(iniPos, endPos, iniRot, endRot, this.progress())
     }
   })
 
@@ -628,48 +617,83 @@ function scrollMagic() {
     duration: 500
   })
     .setTween(blockTween)
-    .addIndicators({name: "2 (duration: 300)"})
+    .addIndicators({name: "First Tween (duration: 500)"})
     .addTo(controller);
-}
-
-
-
-
-
-// init camera
-function setup()
-{
-  cameraPos0 = camera.position.clone()
-  cameraUp0 = camera.up.clone()
-  cameraZoom = camera.position.z
-}
-
-// set a new target for the camera
-function moveCamera(euler, zoom)
-{
-
-
-
-
 }
 
 // on every update of the tween
 function onSlerpUpdate(progress)
 {
-
-  console.log(progress)
+  curPos = new THREE.Vector3(0,0,0)
+  curRot = new THREE.Vector3(0,0,0)
+  //console.log(progress)
   // interpolate quaternions with the current tween value
-  THREE.Quaternion.slerp(iniQ, endQ, curQ, progress)
+  curPos.lerpVectors(iniPos, endPos, progress)
+  curRot.lerpVectors(iniRot, endRot, progress)
+  //THREE.Quaternion.slerp(iniQ, endQ, curQ, progress)
 
-  // apply new quaternion to camera position
-  vec3.x = cameraPos0.x
-  vec3.y = cameraPos0.y
-  vec3.z = cameraZoom
-  vec3.applyQuaternion(curQ)
-  camera.position.copy(vec3)
+  camera.position.set(curPos.x,curPos.y,curPos.z)
+  camera.rotation.set(curRot.x,curRot.y,curRot.z)
+  //camera.rotation.set(curRot)
+}
 
-  // apply new quaternion to camera up
-  vec3 = cameraUp0.clone()
-  vec3.applyQuaternion(curQ)
-  camera.up.copy(vec3)
+function setupScroll(){
+  var controller = new ScrollMagic.Controller();
+
+  var $sections = $('section.trigger')
+
+  console.log("triggers: ", $sections)
+
+  $sections.each(function(index){
+    var $this = $(this),
+        trigger = document.getElementsByClassName('trigger')[index],
+        pin = trigger.querySelectorAll(".pinned-element")[0],
+        length = $(window).height() * parseInt($this.data("length")),
+        id = parseInt($this.data("id")),
+        next = id+1,
+        tweenValue = 0,
+        name = "Section "+index+" with id = "+id
+
+    console.log("trigger :" ,trigger, "pin: ", pin, "length= ", length)
+
+
+    var iniPos = new THREE.Vector3(animationSteps[id].position.x,animationSteps[id].position.y,animationSteps[id].position.z)
+    var endPos = new THREE.Vector3(animationSteps[next].position.x,animationSteps[next].position.y,animationSteps[next].position.z)
+
+    var iniRot = new THREE.Vector3(animationSteps[id].rotation.x,animationSteps[id].rotation.y,animationSteps[id].rotation.z)
+    var endRot = new THREE.Vector3(animationSteps[next].rotation.x,animationSteps[next].rotation.y,animationSteps[next].rotation.z)
+
+
+    var blockTween = TweenLite.to(this, 5, {
+      tweenValue:1,
+      onUpdate: function() {
+        updateTween(iniPos, endPos, iniRot, endRot, this.progress())
+      }
+    })
+
+    var containerScene = new ScrollMagic.Scene({
+      triggerElement: trigger,
+      duration: length
+    })
+    .setTween(blockTween)
+    .addIndicators({name: name })
+
+
+
+    if(pin != undefined){
+      containerScene.setPin(pin)
+    }
+    containerScene.addTo(controller);
+  })
+}
+
+function updateTween(iniPos, endPos, iniRot, endRot, progress){
+  var curPos = new THREE.Vector3(0,0,0)
+  var curRot = new THREE.Vector3(0,0,0)
+
+  curPos.lerpVectors(iniPos, endPos, progress)
+  curRot.lerpVectors(iniRot, endRot, progress)
+
+  camera.position.set(curPos.x,curPos.y,curPos.z)
+  camera.rotation.set(curRot.x,curRot.y,curRot.z)
 }
