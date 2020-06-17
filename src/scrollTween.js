@@ -2,7 +2,16 @@ import * as THREE from 'three'
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader'
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls.js";
 
+import * as ScrollMagic from "scrollmagic"; // Or use scrollmagic-with-ssr to avoid server rendering problems
+import 'imports-loader?define=>false!scrollmagic/scrollmagic/uncompressed/plugins/debug.addIndicators'
+import { TweenMax, TimelineMax, TweenLite } from "gsap"; // Also works with TweenLite and TimelineLite
+import { ScrollMagicPluginGsap } from "scrollmagic-plugin-gsap";
+
+ScrollMagicPluginGsap(ScrollMagic, TweenMax, TimelineMax);
+
+
 import TWEEN from '@tweenjs/tween.js'
+
 
 /********************************/
 /*      Variables          ******/
@@ -27,7 +36,7 @@ $cam_rotZ = $('.cam_rotZ span')
 
 // animation array:
 var isAnimating = false;
-var animStep = 0;
+var animStep = 1;
 
 var animationSteps = {
   0: { position: {x:15.402419031730028, y:0.8644392379961215, z: 6.91182062569953}, rotation: {x: -0.1418727215609679, y: 1.2732181882233577, z: 0.1357153308110989}, time: 2000},
@@ -37,7 +46,7 @@ var animationSteps = {
   4: { position: {x:3.9030383054489004, y:2.573311636082828, z: 12.54121086132899}, rotation: {x: -0.20237944136598865, y: 0.2959144836273942, z: 0.05976471233272036}, time: 3000},
   5: { position: {x:3.7618429695199187, y:0.8752596469082694, z: 10.987039797831278}, rotation: {x: -0.0720431887135113, y: 0.11017487926187171, z: 0.007934867846646643}, time: 1000},
 }
-
+  
 var maxSteps = Object.keys(animationSteps).length
 //console.log("animatiuon length = " + maxSteps)
 
@@ -76,6 +85,7 @@ then(function(promise) {
 /********************************/
 
 function init() {
+
   scene = new THREE.Scene()
   //scene.background = new THREE.Color(0x000000)
 
@@ -258,11 +268,16 @@ function init() {
 
   $('.copy').on('click', function (e) {
     e.preventDefault()
+    /*
+    //copy the camera pos and rot
     var copyText =
       "{ position: {x:" + camera.position.x + ", y:" + camera.position.y + ", z: " + camera.position.z +
       "}, rotation: {x: " + camera.rotation.x + ", y: " + camera.rotation.y + ", z: " + camera.rotation.z +
       "}, time: " + 4000 +
       "},"
+    */
+    console.log(camera.rotation.clone())
+    var copyText = "new THREE.Quaternion().set("+camera.quaternion.x+","+camera.quaternion.y+","+camera.quaternion.z+","+camera.quaternion.w+")"
     var element = document.createElement('DIV');
 
     function selectElementText(element) {
@@ -297,13 +312,15 @@ function init() {
   }, 1500)
 
   $(window).scroll(function () {
-    scrollPoints()
+    //scrollPoints()
   })
 
   //animate to first step
   //animateCam(0)
 
   //controls.handleResize();
+
+  scrollMagic()
 }
 
 
@@ -462,6 +479,9 @@ function animateCam(step) {
   var _time = animationSteps[step].time
   console.log("Animating step " + step + " to position: ", _position)
 
+
+  //TWEEN function with animateVector3
+  /*
   //stop old animation if there is one
   if (posTween != undefined) posTween.stop()
   if (rotTween != undefined) rotTween.stop()
@@ -487,6 +507,9 @@ function animateCam(step) {
       isAnimating = false;
     }
   })
+   */
+
+
 }
 
 
@@ -553,3 +576,100 @@ $.fn.isOnScreen = function () {
   return (!(viewport.right < bounds.left || viewport.left > bounds.right || viewport.bottom < bounds.top || viewport.top > bounds.bottom));
 
 };
+
+
+var cameraPos0   // initial camera position
+var cameraUp0    // initial camera up
+var cameraZoom   // camera zoom
+var iniQ         // initial quaternion
+var endQ         // target quaternion
+var curQ         // temp quaternion during slerp
+var vec3         // generic vector object
+var tweenValue   // tweenable value
+
+function scrollMagic() {
+  //const targetOrientation = new THREE.Quaternion().set(animationSteps[animStep].position.x, animationSteps[animStep].position.y, animationSteps[animStep].position.z, 1).normalize();
+  setup()
+  var start = new THREE.Quaternion().set(-0.02147109194872585,0.5432302992188002,0.013898749233087374,0.839194053238545)
+  var end = new THREE.Quaternion().set(-0.08215950257250292,0.3635366792805399,0.03220648046146977,0.9273907706953968)
+
+  // reset everything
+  endQ = new THREE.Quaternion()
+  iniQ = new THREE.Quaternion().copy(camera.quaternion)
+  curQ = new THREE.Quaternion()
+  vec3 = new THREE.Vector3()
+  tweenValue = 0
+
+  //endQ.setFromEuler(euler)
+  endQ.copy(end)
+  var zoom = 120
+
+  var controller = new ScrollMagic.Controller();
+
+  var blockTween = TweenLite.to(this, 5, {
+    tweenValue:1,
+    cameraZoom:zoom,
+    onUpdate: function() {
+      onSlerpUpdate(this.progress())
+    }
+  })
+
+  /*
+  var blockTween = new TweenMax.fromTo({},{start},  {end,
+    duration: 1.5,
+    onUpdate: function() {
+      camera.quaternion.slerp(targetOrientation, this.progress());
+    }
+  })
+   */
+
+  var containerScene = new ScrollMagic.Scene({
+    triggerElement: '#startTween',
+    duration: 500
+  })
+    .setTween(blockTween)
+    .addIndicators({name: "2 (duration: 300)"})
+    .addTo(controller);
+}
+
+
+
+
+
+// init camera
+function setup()
+{
+  cameraPos0 = camera.position.clone()
+  cameraUp0 = camera.up.clone()
+  cameraZoom = camera.position.z
+}
+
+// set a new target for the camera
+function moveCamera(euler, zoom)
+{
+
+
+
+
+}
+
+// on every update of the tween
+function onSlerpUpdate(progress)
+{
+
+  console.log(progress)
+  // interpolate quaternions with the current tween value
+  THREE.Quaternion.slerp(iniQ, endQ, curQ, progress)
+
+  // apply new quaternion to camera position
+  vec3.x = cameraPos0.x
+  vec3.y = cameraPos0.y
+  vec3.z = cameraZoom
+  vec3.applyQuaternion(curQ)
+  camera.position.copy(vec3)
+
+  // apply new quaternion to camera up
+  vec3 = cameraUp0.clone()
+  vec3.applyQuaternion(curQ)
+  camera.up.copy(vec3)
+}
