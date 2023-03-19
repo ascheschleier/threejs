@@ -28,3 +28,14 @@ Bundle your code
 ```bash
 npm run build
 ```
+
+Problems with newer Node version:
+
+```
+$env:NODE_OPTIONS="--openssl-legacy-provider"
+
+or
+set NODE_OPTIONS=--openssl-legacy-provider
+or
+export NODE_OPTIONS=--openssl-legacy-provider
+```
