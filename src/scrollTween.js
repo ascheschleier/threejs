@@ -64,7 +64,7 @@ var loaderPromise = new Promise(function(resolve, reject) {
     resolve(x); // it went ok!
   }
 
-  gtflLoader.load('model/landscape.glb', loadDone, undefined,  function (error) {
+  gtflLoader.load('model/lapp.glb', loadDone, undefined,  function (error) {
 
     console.error(error);
 
@@ -111,7 +111,7 @@ function init() {
     }
 
     //doesnt seem to work, light are children of point3D meshes
-    /*
+    
     if (child.lights && child.lights.length) {
       console.log("Light "+ i +  " : ", child.lights)
       for (i = 0; i < child.lights.length; i++) {
@@ -120,7 +120,7 @@ function init() {
         scene.add(lamp);
       }
     }
-     */
+     
   })
   console.log(gltf)
 
@@ -161,24 +161,28 @@ function init() {
   /*      Light                   */
   /********************************/
 
-  var ambientLight = new THREE.AmbientLight(0x606060)
-  //scene.add(ambientLight)
+  scene.add( new THREE.AmbientLight( 0xffffff, .3 ) );
+
   /*
+  var ambientLight = new THREE.AmbientLight(0x606060)
+  scene.add(ambientLight)
+  */
+  
   directionalLight = new THREE.DirectionalLight(0xffffff , 1)
-  //directionalLight.position.set(110.6, -140.6, 110.0).normalize()
-  directionalLight.position.set(lightOptions.position.x, lightOptions.position.y, lightOptions.position.z).normalize()
-  directionalLight.rotation.set(lightOptions.rotation.x, lightOptions.rotation.y, lightOptions.rotation.z)
+  directionalLight.position.set(110.6, -140.6, 110.0).normalize()
+  //directionalLight.position.set(lightOptions.position.x, lightOptions.position.y, lightOptions.position.z).normalize()
+  //directionalLight.rotation.set(lightOptions.rotation.x, lightOptions.rotation.y, lightOptions.rotation.z)
   directionalLight.castShadow = true
   scene.add(directionalLight)
 
   //Set up shadow properties for the light
-
+  
   directionalLight.shadow.mapSize.width = 512;  // default
   directionalLight.shadow.mapSize.height = 512; // default
   directionalLight.shadow.camera.near = 0.5;    // default
   directionalLight.shadow.camera.far = 500;     // default
 
-
+  /*
   light = new THREE.PointLight( 0xffd0b9, 1, 0, 2 );
   light.position.set(lightOptions.position.x, lightOptions.position.y, lightOptions.position.z);
   light.castShadow = true;            // default false
@@ -194,8 +198,8 @@ function init() {
   var material = new THREE.MeshBasicMaterial({color: 0x00ff00});
   cube = new THREE.Mesh(geometry, material);
   cube.position.set(lightOptions.position.x, lightOptions.position.y, lightOptions.position.z);
-
-   */
+  */
+   
   //scene.add( cube );
 
 
@@ -327,14 +331,15 @@ function init() {
 }
 
 
+
 /********************************/
 /*      RENDER                  */
 /********************************/
-
+const clock2 = new THREE.Clock();
 function render() {
   // RAF
   requestAnimationFrame(render)
-
+  mixer.update(clock2.getDelta());   
   renderer.render(scene, camera)
   //controls.update()
   TWEEN.update();

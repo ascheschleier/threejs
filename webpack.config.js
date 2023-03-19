@@ -13,7 +13,8 @@ module.exports = {
       jQuery: "jquery"
     })
   ],
-  entry: './src/scrollTween.js',
+  //entry: './src/scrollTween.js',
+  entry: './src/madlen.js',
   output: {
     path: path.resolve(__dirname, 'public'),
     filename: 'bundle.js',
