@@ -18,12 +18,20 @@
             background-size:100% 100%;
         }
 
+        /*
         canvas {
             position: fixed;
             left: 0;
             right: 0;
             top: 0;
             width: 100%;
+        }
+        */
+        #threedee {
+            width:100vw;
+            height:100vh;
+            position:relative;
+            overflow: hidden;
         }
 
         .smallSpace {
@@ -67,6 +75,10 @@
     <a class="btn btn-primary btn-lg copy" href="#" role="button">Copy</a>
 </div>
 <p style="margin-left: 500px; z-index: 199; position: absolute;"><a class="btn btn-primary btn-lg moveCam" href="#" role="button">Advance »</a></p-->
+<div id="threedee">
+		
+</div>
+<div id="path_to_glb" glb="model/stein_comp3.glb" data-glb="model/stein_comp3.glb"></div>
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
         integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
         crossorigin="anonymous"></script>

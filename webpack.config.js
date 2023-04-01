@@ -2,6 +2,7 @@ const path = require('path')
 var webpack = require('webpack');
 
 module.exports = {
+  /*
   resolve: {
     alias: {
       jquery: "jquery/src/jquery",
@@ -13,8 +14,9 @@ module.exports = {
       jQuery: "jquery"
     })
   ],
+  */
   //entry: './src/scrollTween.js',
-  entry: './src/madlen.js',
+  entry: './src/madlen_light.js',
   output: {
     path: path.resolve(__dirname, 'public'),
     filename: 'bundle.js',
